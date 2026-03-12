@@ -7,3 +7,5 @@ edition = "2024"
 rand = "0.10.0"
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.18"
+chrono = "0.4.44"
+quote_lib = {path = "../quote_lib"}
