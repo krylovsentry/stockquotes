@@ -78,4 +78,8 @@ impl QuoteGenerator {
             timestamp: chrono::Utc::now().timestamp() as u64,
         }
     }
+
+    pub fn get_quotes(&mut self) -> Vec<String> {
+        Vec::from_iter(self.quote_to_last_price.keys().cloned())
+    }
 }

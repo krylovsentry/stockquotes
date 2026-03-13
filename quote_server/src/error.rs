@@ -5,4 +5,7 @@ use thiserror::Error;
 pub enum QuoteServerError {
     #[error("File with tickers not found")]
     Io(#[from] io::Error),
+
+    #[error("generator thread finished with error")]
+    DispatcherClosed
 }
