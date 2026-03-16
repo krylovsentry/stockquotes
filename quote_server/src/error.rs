@@ -14,7 +14,4 @@ pub enum QuoteServerError {
 
     #[error("Invalid UDP address in STREAM command")]
     InvalidUDPAddress,
-
-    #[error("TCP connection error: {0:?}")]
-    TcpConnectionError(std::io::Error),
 }
