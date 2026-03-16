@@ -43,8 +43,10 @@ pub(crate) fn load_tickers(path: &str) -> Result<Vec<String>, QuoteClientError> 
 }
 
 fn main() {
+    env_logger::init();
+
     if let Err(e) = run() {
-        eprintln!("Error: {e}");
+        log::error!("Error: {e}");
         std::process::exit(1);
     }
 }
@@ -69,7 +71,7 @@ fn run() -> Result<(), QuoteClientError> {
         .map_err(QuoteClientError::TcpWrite)?;
     stream.flush().map_err(QuoteClientError::TcpWrite)?;
 
-    println!(
+    log::info!(
         "Sent STREAM command for {} ticker(s) to {}",
         tickers.len(),
         config.server_addr
@@ -125,7 +127,7 @@ fn run() -> Result<(), QuoteClientError> {
         }
     }
 
-    println!("Shutting down.");
+    log::info!("Shutting down.");
     Ok(())
 }
 
