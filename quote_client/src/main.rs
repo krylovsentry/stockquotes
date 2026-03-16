@@ -112,11 +112,16 @@ fn run() -> Result<(), QuoteClientError> {
                         }
                     });
                 }
-                if let Ok(quote) = StockQuote::from_bencode_bytes(&buf[..n]) {
-                    println!(
-                        "{} price={} volume={} ts={}",
-                        quote.ticker, quote.price, quote.volume, quote.timestamp
-                    );
+                match StockQuote::from_bencode_bytes(&buf[..n]) {
+                    Ok(quote) => {
+                        println!(
+                            "{} price={} volume={} ts={}",
+                            quote.ticker, quote.price, quote.volume, quote.timestamp
+                        );
+                    }
+                    Err(e) => {
+                        log::warn!("failed to decode UDP packet from {from}: {e}");
+                    }
                 }
             }
             Err(e) if e.kind() == std::io::ErrorKind::TimedOut => {}
