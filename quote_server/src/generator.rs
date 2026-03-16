@@ -10,10 +10,10 @@ pub struct QuoteGenerator {
     quote_to_last_price: HashMap<String, f64>,
 }
 impl QuoteGenerator {
-    pub fn new() -> Self {
-        // panic in case we can't load data, unexpected
+    /// Создаёт генератор, загружая тикеры из стандартного файла.
+    /// При ошибке чтения возвращает `QuoteServerError::Io`.
+    pub fn new() -> Result<Self, QuoteServerError> {
         Self::from_tickers_file("quote_server/stock_data/tickers.txt")
-            .expect("Cannot load stock_data")
     }
 
     pub fn from_tickers_file(path: &str) -> Result<QuoteGenerator, QuoteServerError> {

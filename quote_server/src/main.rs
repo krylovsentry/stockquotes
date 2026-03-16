@@ -15,15 +15,17 @@ mod protocol;
 type ClientSender = std::sync::mpsc::Sender<StockQuote>;
 
 fn main() -> Result<(), QuoteServerError> {
+    env_logger::init();
+
     let (gen_tx, gen_rx) = std::sync::mpsc::channel::<StockQuote>();
-    let quote_gen = QuoteGenerator::new();
+    let quote_gen = QuoteGenerator::new()?;
 
     let clients: Arc<Mutex<Vec<ClientSender>>> = Arc::new(Mutex::new(Vec::new()));
 
     let gen_tx_clone = gen_tx.clone();
     let _handle = thread::spawn(move || {
         if let Err(e) = run_generator_loop(quote_gen, gen_tx_clone) {
-            eprintln!("generator thread finished with error: {e:?}");
+            log::error!("generator thread finished with error: {e:?}");
         }
     });
 
@@ -44,12 +46,13 @@ fn main() -> Result<(), QuoteServerError> {
                 let clients_clone = Arc::clone(&clients);
                 thread::spawn(move || {
                     if let Err(e) = handle_tcp_connect(stream, clients_clone) {
-                        eprintln!("client thread finished with error: {e:?}");
+                        log::error!("client thread finished with error: {e:?}");
                     }
                 });
             },
             Err(e) => {
-                return Err(QuoteServerError::TcpConnectionError(e));
+                log::error!("TCP accept error: {e:?}");
+                continue;
             }
         }
     }
@@ -68,7 +71,10 @@ fn handle_tcp_connect(tcp_stream: TcpStream, tcp_clients: Arc<Mutex<Vec<ClientSe
     }
 
     let request = match StreamRequest::parse_stream_command(&line) {
-        Ok(req) => req,
+        Ok(req) => {
+            let _ = stream.write_all(b"OK\n");
+            req
+        },
         Err(e) => {
             let _ = stream.write_all(b"ERR invalid STREAM command\n");
             return Err(e);
@@ -119,7 +125,7 @@ fn start_client_stream(
                         }
                     }
                     Err(e) => {
-                        eprintln!("Ping recv error from {udp_addr}: {e}");
+                        log::warn!("Ping recv error from {udp_addr}: {e}");
                         break;
                     }
                 }
@@ -131,7 +137,7 @@ fn start_client_stream(
 
     for quote in client_rx {
         if let Ok(lp) = last_ping.lock() && lp.elapsed() > timeout {
-            eprintln!("Ping timeout for {udp_addr}, stopping stream");
+            log::warn!("Ping timeout for {udp_addr}, stopping stream");
             break;
         }
 
@@ -142,13 +148,13 @@ fn start_client_stream(
         let bytes = match quote.to_bencode_bytes() {
             Ok(b) => b,
             Err(e) => {
-                eprintln!("bencode error for quote {:?}: {e}", quote);
+                log::warn!("bencode error for quote {:?}: {e}", quote);
                 continue;
             }
         };
 
         if let Err(e) = socket.send_to(&bytes, udp_addr) {
-            eprintln!("UDP send error to {udp_addr}: {e}");
+            log::warn!("UDP send error to {udp_addr}: {e}");
         }
     }
 
